@@ -1,0 +1,2952 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rev-Logger FEMA ICS-214 Prototype</title>
+<style>
+:root{
+  --bg:#eef2f7;
+  --panel:#ffffff;
+  --panel2:#f7f9fc;
+  --text:#142033;
+  --muted:#5b6678;
+  --border:#cfd7e3;
+  --accent:#0d6efd;
+  --good:#157347;
+  --warn:#a96b00;
+  --danger:#b02a37;
+  --shadow:0 8px 24px rgba(16,24,40,.08);
+}
+
+body.dark{
+  --bg:#1c2430;
+  --panel:#283243;
+  --panel2:#222b39;
+  --text:#edf3fb;
+  --muted:#b6c2d2;
+  --border:#46546a;
+  --accent:#66a7ff;
+  --good:#63c28d;
+  --warn:#f0be63;
+  --danger:#ff93a0;
+  --shadow:0 8px 24px rgba(0,0,0,.28);
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
+
+.toolbar{
+  position:sticky;
+  top:0;
+  z-index:20;
+  background:var(--panel);
+  border-bottom:1px solid var(--border);
+  padding:10px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  box-shadow:var(--shadow);
+}
+
+.toolbar-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:center;
+  width:100%;
+}
+
+.toolbar-main .spacer{
+  flex:1 1 auto;
+}
+
+.toolbar-meta{
+  justify-content:flex-end;
+}
+
+.toolbar-meta label{
+  margin-bottom:0;
+}
+
+.toolbar-meta select{
+  width:auto;
+  min-width:110px;
+}
+
+.toolbar-controls{
+  align-items:center;
+}
+
+.toolbar-primary{
+  margin-bottom:2px;
+}
+
+.toolbar-ops{
+  flex-wrap:nowrap;
+}
+
+.toolbar-ops .spacer{
+  flex:1 1 auto;
+}
+
+.toolbar-controls label{
+  margin-bottom:0;
+}
+
+.toolbar-controls select{
+  width:auto;
+  min-width:110px;
+}
+
+.wx-mini{
+  border:1px solid var(--border);
+  background:var(--panel2);
+  color:var(--text);
+  cursor:pointer;
+}
+.wx-mini.quiet{
+  border-color:var(--border);
+}
+.wx-mini.watch{
+  border-color:var(--warn);
+  color:var(--warn);
+  font-weight:700;
+}
+.wx-mini.warning{
+  border-color:var(--danger);
+  color:var(--danger);
+  font-weight:700;
+}
+.weather-mini-wrap{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  min-width:0;
+  flex:0 1 auto;
+}
+.wx-mini-label{
+  flex:0 0 auto;
+  font-weight:700;
+}
+.wx-mini{
+  max-width:180px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.wx-mini-item{
+  padding:6px 10px;
+  border-radius:999px;
+}
+
+
+@media (max-width: 820px){
+  .toolbar-meta{
+    justify-content:flex-start;
+  }
+  .toolbar-ops{
+    flex-wrap:wrap;
+  }
+}
+
+.container{
+  width:min(96%,1300px);
+  margin:14px auto;
+}
+
+.panel{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:14px;
+  margin-bottom:14px;
+  box-shadow:var(--shadow);
+}
+
+.grid2,.grid3{
+  display:grid;
+  gap:14px;
+}
+.grid2{grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}
+.grid3{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+
+label{
+  display:block;
+  font-weight:700;
+  font-size:.88rem;
+  margin-bottom:4px;
+}
+
+input,textarea,select,button{font:inherit}
+
+input[type=text],input[type=datetime-local],textarea,select{
+  width:100%;
+  padding:8px 10px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:var(--panel2);
+  color:var(--text);
+}
+
+textarea{
+  min-height:110px;
+  resize:vertical;
+}
+
+button{
+  padding:8px 12px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:var(--panel2);
+  cursor:pointer;
+  color:var(--text);
+}
+
+button.primary{
+  background:var(--accent);
+  border-color:var(--accent);
+  color:#fff;
+}
+
+button.good{
+  border-color:var(--good);
+  color:var(--good);
+}
+
+button.danger{
+  border-color:var(--danger);
+  color:var(--danger);
+}
+
+button.warn{
+  border-color:var(--warn);
+  color:var(--warn);
+}
+
+button:disabled{
+  opacity:.5;
+  cursor:not-allowed;
+}
+
+button:disabled:hover{
+  filter:none;
+}
+
+.row{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+
+.spacer{flex:1}
+.small{font-size:.86rem}
+.subtle{color:var(--muted)}
+
+.pill{
+  display:inline-flex;
+  gap:8px;
+  align-items:center;
+  padding:5px 10px;
+  border-radius:999px;
+  border:1px solid var(--border);
+  background:var(--panel2);
+}
+
+.status{
+  padding:3px 10px;
+  border-radius:999px;
+  font-weight:700;
+}
+.idle{background:#ddd;color:#333}
+.running{background:#dff3e6;color:var(--good)}
+.paused{background:#fff0cf;color:var(--warn)}
+.ended{background:#f8d7da;color:var(--danger)}
+
+.log-layout{
+  display:grid;
+  grid-template-columns:240px 1fr;
+  gap:14px;
+}
+@media(max-width:900px){
+  .log-layout{grid-template-columns:1fr}
+}
+
+#callsignList{
+  width:100%;
+  min-height:240px;
+  padding:6px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:var(--panel2);
+  color:var(--text);
+}
+
+#sttOutput{
+  min-height:240px;
+  max-height:340px;
+  overflow:auto;
+  padding:12px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:var(--panel2);
+  white-space:pre-wrap;
+  line-height:1.45;
+}
+
+.message-highlight-wrap{
+  position:relative;
+  min-height:132px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:var(--panel2);
+  overflow:hidden;
+}
+
+.message-highlight-backdrop,
+.message-highlight-input{
+  margin:0;
+  padding:12px;
+  font:inherit;
+  line-height:1.45;
+  letter-spacing:inherit;
+  tab-size:4;
+  white-space:pre-wrap;
+  word-wrap:break-word;
+  overflow-wrap:anywhere;
+}
+
+.message-highlight-backdrop{
+  min-height:132px;
+  color:var(--text);
+  pointer-events:none;
+}
+
+.message-highlight-input{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  min-height:132px;
+  resize:vertical;
+  border:none;
+  outline:none;
+  background:transparent;
+  color:transparent;
+  -webkit-text-fill-color:transparent;
+  caret-color:var(--text);
+}
+
+.message-highlight-input::placeholder{
+  color:var(--muted);
+  -webkit-text-fill-color:var(--muted);
+}
+
+.message-highlight-backdrop.is-empty{
+  color:var(--muted);
+}
+
+#eventLog td.activity-cell{
+  white-space:pre-wrap;
+  word-break:break-word;
+}
+
+#eventLog tbody td{
+  background:#eef1f4;
+  color:#1f2937;
+}
+
+#eventLog tbody tr:nth-child(even) td{
+  background:#e7ebf0;
+}
+
+.highlight{
+  background:#fff59d;
+  color:#000;
+  border-radius:4px;
+  padding:0 2px;
+}
+
+.weather-strip{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  min-height:36px;
+  align-items:center;
+}
+
+.alert-chip{
+  padding:7px 10px;
+  border-radius:999px;
+  border:1px solid var(--border);
+  background:var(--panel2);
+  cursor:pointer;
+}
+
+.alert-chip.warning{border-color:var(--danger)}
+.alert-chip.watch{border-color:var(--warn)}
+.alert-chip.statement{border-color:var(--accent)}
+
+.table-wrap{overflow:auto}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+
+th,td{
+  border:1px solid var(--border);
+  padding:7px 8px;
+  vertical-align:top;
+}
+
+th{
+  background:var(--accent);
+  color:#fff;
+  text-align:left;
+}
+
+.panel-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  margin-bottom:10px;
+}
+
+.collapsed{display:none}
+
+.modal{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.45);
+  padding:16px;
+  z-index:100;
+}
+
+.modal.open{display:block}
+
+.modal-box{
+  max-width:960px;
+  max-height:88vh;
+  overflow:auto;
+  margin:0 auto;
+  background:#fff;
+  color:#000;
+  border-radius:14px;
+  border:1px solid #bbb;
+}
+
+.modal-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px 14px;
+  border-bottom:1px solid #ddd;
+  position:sticky;
+  top:0;
+  background:#fff;
+}
+
+.modal-body{padding:14px}
+
+/* Larger script dialog text for readability */
+.modal-head strong{
+  font-size:1.25rem;
+}
+.modal-body{
+  font-size:1.25rem;
+  line-height:1.5;
+}
+
+
+body.dark .modal-box{
+  background:#283243;
+  color:#edf3fb;
+  border-color:#46546a;
+}
+body.dark .modal-head{
+  background:#283243;
+  color:#edf3fb;
+  border-bottom-color:#46546a;
+}
+
+.kbd-btn{
+  white-space:nowrap;
+}
+
+.shortcuts-grid{
+  display:grid;
+  grid-template-columns:minmax(150px,240px) 1fr;
+  gap:10px 14px;
+  align-items:start;
+}
+
+.shortcuts-grid + .shortcuts-grid{
+  margin-top:14px;
+  padding-top:14px;
+  border-top:1px solid var(--border);
+}
+
+.kbd{
+  display:inline-block;
+  min-width:2.1em;
+  padding:3px 8px;
+  border:1px solid #999;
+  border-bottom-width:2px;
+  border-radius:8px;
+  background:rgba(255,255,255,.9);
+  color:#111;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.92em;
+  text-align:center;
+  box-shadow:inset 0 -1px 0 rgba(0,0,0,.08);
+}
+
+body.dark .kbd{
+  background:#1f2733;
+  color:#edf3fb;
+  border-color:#5d6b81;
+}
+
+.kbd-seq{display:flex;gap:6px;flex-wrap:wrap}
+.shortcuts-note{margin-top:14px;color:var(--muted);font-size:.9rem}
+
+.toast-wrap{
+  position:fixed;
+  right:16px;
+  bottom:16px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  z-index:250;
+  pointer-events:none;
+}
+.toast{
+  background:var(--panel);
+  color:var(--text);
+  border:1px solid var(--border);
+  border-left:4px solid var(--accent);
+  box-shadow:var(--shadow);
+  border-radius:10px;
+  padding:10px 12px;
+  min-width:220px;
+  max-width:min(92vw,360px);
+  opacity:0;
+  transform:translateY(8px);
+  transition:opacity .18s ease, transform .18s ease;
+}
+.toast.show{
+  opacity:1;
+  transform:translateY(0);
+}
+
+.stt-toolbar{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:center;
+  margin-bottom:10px;
+}
+.stt-toolbar .spacer{
+  flex:1 1 auto;
+}
+.stt-status{
+  min-width:120px;
+}
+.stt-test-only[hidden]{
+  display:none !important;
+}
+#meterWrap{
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  min-width:0;
+}
+#meterBar{
+  position:relative;
+  width:220px;
+  height:14px;
+  border:1px solid var(--border);
+  border-radius:999px;
+  overflow:hidden;
+  background:linear-gradient(90deg,#163 0%, #384 55%, #864 78%, #933 100%);
+}
+#meterFill{
+  position:absolute;
+  inset:0 auto 0 0;
+  width:0%;
+  background:rgba(255,255,255,.55);
+  mix-blend-mode:screen;
+}
+#meterPeak{
+  position:absolute;
+  top:0;
+  bottom:0;
+  width:2px;
+  left:0%;
+  background:#fff;
+  box-shadow:0 0 0 1px rgba(0,0,0,.3);
+}
+#meterText,#clipText{
+  font-size:.9rem;
+  min-width:90px;
+}
+#clipText.clip{
+  color:var(--danger);
+  font-weight:700;
+}
+.client-log-pre{
+  margin:0;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.9rem;
+  line-height:1.35;
+}
+
+
+/* grouped action dropdowns */
+.menu-wrap{position:relative;display:inline-block}
+.menu-btn::after{content:" ▼";font-size:.8em}
+.dropdown-menu{
+  position:absolute; top:calc(100% + 4px); left:0; min-width:230px; z-index:40;
+  background:var(--panel); border:1px solid var(--border); border-radius:10px;
+  box-shadow:0 10px 30px rgba(0,0,0,.16); padding:6px; display:none;
+}
+.dropdown-menu.open{display:block}
+.dropdown-menu button{
+  display:block; width:100%; text-align:left; margin:0; border:none; background:transparent;
+  color:var(--text); padding:9px 10px; border-radius:8px; cursor:pointer;
+}
+.dropdown-menu button:hover{background:var(--panel2)}
+.legacy-action-proxy{display:none !important}
+
+
+/* stronger WX color coding + hover tooltips */
+.wx-mini.watch{
+  border-color:var(--warn);
+  background:#fff3df;
+  color:#8a5a00;
+  font-weight:700;
+}
+.wx-mini.warning{
+  border-color:var(--danger);
+  background:#ffe6ea;
+  color:#a61e31;
+  font-weight:700;
+}
+.alert-chip.watch{
+  background:#fff3df;
+  border-color:var(--warn);
+  color:#8a5a00;
+}
+.alert-chip.warning{
+  background:#ffe6ea;
+  border-color:var(--danger);
+  color:#a61e31;
+}
+.wx-tooltip{
+  position:fixed;
+  z-index:2000;
+  max-width:360px;
+  pointer-events:none;
+  background:rgba(20,32,51,.96);
+  color:#fff;
+  border-radius:10px;
+  padding:10px 12px;
+  box-shadow:0 10px 28px rgba(0,0,0,.28);
+  font-size:12px;
+  line-height:1.35;
+  display:none;
+  white-space:normal;
+}
+.wx-tooltip strong{display:block;margin-bottom:4px}
+
+
+.toolbar-primary{
+  align-items:center;
+}
+.toolbar-primary #weatherMiniWrap{
+  margin-left:auto;
+}
+
+
+.common-reports-wrap{
+  display:none;
+  margin-top:10px;
+}
+.common-reports-wrap.show{
+  display:block;
+}
+
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="toolbar-row toolbar-test">
+    <label for="testModeToggle" class="toggle-inline small">
+      <input id="testModeToggle" type="checkbox">
+      Test mode
+    </label>
+  </div>
+  <div class="toolbar-row toolbar-main toolbar-primary">
+    <div class="menu-wrap">
+      <button id="btnImportMenu" type="button" class="menu-btn">Import</button>
+      <div id="importMenu" class="dropdown-menu" role="menu" aria-label="Import menu">
+        <button id="btnImportTempMenu" type="button">Temp Log</button>
+        <button id="btnImportScriptMenu" type="button">Script CSV</button>
+        <button id="btnImportKeywordsMenu" type="button">Keywords CSV</button>
+        <button id="btnImportCommonReportsMenu" type="button">Common Reports CSV</button>
+      </div>
+    </div>
+    <div class="menu-wrap">
+      <button id="btnExportMenu" type="button" class="menu-btn">Export</button>
+      <div id="exportMenu" class="dropdown-menu" role="menu" aria-label="Export menu">
+        <button id="btnPreview214Menu" type="button">Preview ICS-214</button>
+        <button id="btnExport214Menu" type="button">Export ICS-214 HTML</button>
+        <button id="btnPrint214Menu" type="button">Print / Save ICS-214 PDF</button>
+        <button id="btnExportTempMenu" type="button">Export Temp Log</button>
+        <button id="btnExportCsvMenu" type="button">Export CSV</button>
+      </div>
+    </div>
+    <div class="menu-wrap">
+      <button id="btnHelpMenu" type="button" class="menu-btn">Help</button>
+      <div id="helpMenu" class="dropdown-menu" role="menu" aria-label="Help menu">
+        <button id="btnCheatSheet" type="button">Operator Cheat Sheet</button>
+        <button id="btnUserManual" type="button">User Manual</button>
+      </div>
+    </div>
+
+    <div id="weatherMiniWrap" class="weather-mini-wrap" aria-label="Current weather alerts" style="margin-left:auto"></div>
+
+    <button id="btnImportTemp" class="legacy-action-proxy">Import Temp Log</button>
+    <button id="btnImportScript" class="legacy-action-proxy">Import Script CSV</button>
+    <button id="btnImportKeywords" class="legacy-action-proxy">Import Keywords CSV</button>
+    <button id="btnImportCommonReports" class="legacy-action-proxy">Import Common Reports CSV</button>
+    <button id="btnExportTemp" class="legacy-action-proxy">Export Temp Log</button>
+    <button id="btnExportCsv" class="legacy-action-proxy">Export CSV</button>
+    <button id="btnPreview214" class="primary legacy-action-proxy">Preview ICS-214</button>
+    <button id="btnExport214" class="primary legacy-action-proxy">Export ICS-214 HTML</button>
+    <button id="btnPrint214" class="primary legacy-action-proxy">Print / Save PDF</button>
+  </div>
+  <div class="toolbar-row toolbar-main toolbar-controls toolbar-ops">
+    <button id="btnStart" class="good">Start</button>
+    <button id="btnPause" class="warn">Pause</button>
+    <button id="btnResume" class="good">Resume</button>
+    <button id="btnEnd" class="danger">End</button>
+    <button id="btnClearLog">Clear Log</button>
+    <div class="spacer"></div>
+    <label for="themeSelect" class="small" style="font-weight:700;">Theme</label>
+    <select id="themeSelect">
+      <option value="light">Light</option>
+      <option value="dark">Dark</option>
+    </select>
+    <span class="pill small" id="clockNow">Local:</span>
+    <span class="pill">State <span id="runState" class="status idle">Idle</span></span>
+
+</div>
+
+<input id="fileTemp" type="file" accept=".json,.txt" hidden>
+<input id="fileScript" type="file" accept=".csv,.txt" hidden>
+<input id="fileKeywords" type="file" accept=".csv,.txt" hidden>
+<input id="fileCommonReports" type="file" accept=".csv,.txt" hidden>
+
+<div class="container">
+<div class="grid2">
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <strong>ICS-214 Header Panel</strong>
+          <div class="small subtle">Minimize when not in use.</div>
+        </div>
+        <button type="button" data-toggle="icsPanelBody">Minimize / Expand</button>
+      </div>
+      <div id="icsPanelBody">
+        <div class="grid3">
+          <div>
+            <label for="incidentName">1. Incident Name</label>
+            <input id="incidentName" type="text" placeholder="Enter incident name here">
+          </div>
+          <div>
+            <label for="assignmentName">2. Operational Period / Assignment</label>
+            <input id="assignmentName" type="text" placeholder="Enter operational period or assignment here">
+          </div>
+          <div>
+            <label for="teamName">3. Name / ICS Position</label>
+            <input id="teamName" type="text" placeholder="Enter name / ICS position here">
+          </div>
+          <div>
+            <label for="incidentLocation">4. Facility / Location</label>
+            <input id="incidentLocation" type="text" placeholder="Enter facility or location here">
+          </div>
+          <div>
+            <label for="opPeriodFrom">Operational Period From</label>
+            <input id="opPeriodFrom" type="datetime-local">
+          </div>
+          <div>
+            <label for="opPeriodTo">Operational Period To</label>
+            <input id="opPeriodTo" type="datetime-local">
+          </div>
+          <div>
+            <label for="preparedBy">Prepared By</label>
+            <input id="preparedBy" type="text" placeholder="Enter prepared-by name here">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <strong>Weather Panel</strong>
+          <div class="small subtle">Location details are minimized on-screen.</div>
+        </div>
+        <button type="button" data-toggle="weatherPanelBody">Minimize / Expand</button>
+      </div>
+      <div id="weatherPanelBody">
+        <div class="grid2">
+          <div>
+            <label for="zipInput">Weather ZIP</label>
+            <input id="zipInput" type="text" placeholder="Enter ZIP code here">
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <div class="row">
+              <button id="btnWeatherZip">Load by ZIP</button>
+              <button id="btnWeatherGeo">Use Location</button>
+            </div>
+          </div>
+        </div>
+        <div class="small subtle" id="weatherSummary" style="margin-top:10px">No weather location loaded.</div>
+        <div style="margin-top:10px">
+          <label>Warnings</label>
+          <div id="warningStrip" class="weather-strip"></div>
+        </div>
+        <div style="margin-top:10px">
+          <label>Watches / Statements</label>
+          <div id="watchStrip" class="weather-strip"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="panel">
+      <div class="panel-header">
+        <strong>Speech-to-Text / Transcript</strong>
+      </div>
+      <div class="stt-toolbar">
+        <button id="btnSttStart" class="good">Start STT</button>
+        <button id="btnSttStop" class="warn">Stop STT</button>
+        <label for="chunkMsSelect" class="small" style="font-weight:700;">Chunk</label>
+        <select id="chunkMsSelect">
+          <option value="1500">1.5 s</option>
+          <option value="2000" selected>2.0 s</option>
+          <option value="2500">2.5 s</option>
+          <option value="3000">3.0 s</option>
+        </select>
+        <label for="dedupeToggle" class="toggle-inline small">
+          <input id="dedupeToggle" type="checkbox" checked>
+          Reduce duplicate chunk text
+        </label>
+        <span id="sttStatus" class="pill small stt-status">STT idle</span>
+        <div id="meterWrap" aria-label="Input level meter">
+          <div id="meterBar"><div id="meterFill"></div><div id="meterPeak"></div></div>
+          <div id="meterText">Level: -- dBFS</div>
+          <div id="clipText">OK</div>
+        </div>
+        <div class="spacer"></div>
+        <button id="btnClientLog" class="stt-test-only" hidden>Client Log</button>
+        <button id="btnSampleTranscript" class="stt-test-only" hidden>Inject Sample Transcript</button>
+        <button id="btnCopyTranscript">Copy Selected Text</button>
+        <button id="btnTranscriptToMessage">Copy Transcript Selection to Message</button>
+        <button id="btnClearTranscript">Clear Transcript</button>
+      </div>
+      <div id="sttOutput" contenteditable="true" spellcheck="false"></div>
+      <div style="margin-top:12px">
+        <label>Quick Script Buttons</label>
+        <div id="scriptButtons" class="row"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <strong>Manual Log Entry</strong>
+        <button id="btnShowShortcuts" type="button" class="kbd-btn">Keyboard Shortcuts</button>
+      </div>
+      <div class="log-layout">
+        <div>
+          <label for="callsignList">Callsigns Heard</label>
+          <select id="callsignList" size="12"></select>
+          <div class="small subtle" style="margin-top:8px">Double-click to insert.</div>
+        </div>
+        <div>
+          <div>
+            <label for="entryCallsign">Callsign</label>
+            <input id="entryCallsign" type="text" placeholder="Enter callsign here" tabindex="1">
+          </div>
+
+          <div id="commonReportsWrap" class="common-reports-wrap">
+            <label for="commonReportsSelect">Common Reports</label>
+            <select id="commonReportsSelect">
+              <option value="">Select a common report…</option>
+            </select>
+            <div class="small subtle" style="margin-top:6px">Selecting an item inserts it into the Message Traffic field.</div>
+          </div>
+
+          <div style="margin-top:10px">
+            <label for="messageInput">Message Traffic</label>
+            <div class="message-highlight-wrap">
+              <div id="messageHighlight" class="message-highlight-backdrop is-empty">Quarter size hail near downtown.</div>
+              <textarea id="messageInput" class="message-highlight-input" placeholder="Enter message traffic here" tabindex="2"></textarea>
+            </div>
+          </div>
+
+          <div class="row" style="margin-top:10px">
+            <button id="btnLogEntry" class="primary" tabindex="3">Log Entry</button>
+            <button id="btnClearEntry" tabindex="4">Clear</button>
+          </div>
+
+          <div class="grid2" style="margin-top:12px">
+            <div>
+              <label for="entryNwsTag">NWS Station</label>
+              <select id="entryNwsTag" tabindex="5">
+                <option>No</option>
+                <option>Yes</option>
+              </select>
+            </div>
+            <div>
+              <label>&nbsp;</label>
+              <button id="btnRememberNws" tabindex="6">Remember as NWS</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <strong>Event Log</strong>
+    </div>
+    <div class="table-wrap">
+      <table id="eventLog">
+        <thead>
+          <tr>
+            <th style="width:92px">Date</th>
+            <th style="width:64px">Time</th>
+            <th style="width:118px">CALLSIGN</th>
+            <th style="width:64px">NWS?</th>
+            <th>Notable Activities / Message Traffic</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<div id="modal" class="modal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <strong id="modalTitle">Detail</strong>
+      <button id="btnCloseModal">Close</button>
+    </div>
+    <div id="modalBody" class="modal-body">
+</div>
+</div>
+
+<div id="toastWrap" class="toast-wrap" aria-live="polite" aria-atomic="true"></div>
+
+<script>
+(function(){
+'use strict';
+
+const STORAGE_KEY = 'revlogger_fema_clean_v4';
+const nwsCallsignSet = new Set();
+let scriptItems = [];
+let keywordItems = [];
+let commonReportsItems = [];
+let currentWeatherContext = null;
+
+let audioContext = null;
+let mediaStream = null;
+let sourceNode = null;
+let processorNode = null;
+let analyserNode = null;
+let meterAnim = null;
+let lastClipAt = 0;
+let peakHold = 0;
+let sttRunning = false;
+let sendInFlight = false;
+let pendingChunks = [];
+let seqCounter = 0;
+let pcmQueue = [];
+let pcmFrames = 0;
+let chunkMs = 2000;
+let captureSampleRate = 48000;
+let clientLogLines = [];
+
+function $(id){
+  return document.getElementById(id);
+}
+
+function esc(value){
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function nowParts(d){
+  const x = d || new Date();
+  const pad = n => String(n).padStart(2, '0');
+  return {
+    date: x.getFullYear() + '-' + pad(x.getMonth() + 1) + '-' + pad(x.getDate()),
+    time: pad(x.getHours()) + ':' + pad(x.getMinutes()) + ':' + pad(x.getSeconds())
+  };
+}
+
+function toLocalInputValue(d){
+  const x = d || new Date();
+  const pad = n => String(n).padStart(2, '0');
+  return x.getFullYear() + '-' + pad(x.getMonth() + 1) + '-' + pad(x.getDate()) + 'T' + pad(x.getHours()) + ':' + pad(x.getMinutes());
+}
+
+function csvEscape(v){
+  return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+}
+
+function regexEscape(s){
+  return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function updateClock(){
+  $('clockNow').textContent = 'Local: ' + new Date().toLocaleString();
+}
+
+function applyTheme(theme){
+  if(theme === 'dark'){
+    document.body.classList.add('dark');
+  } else {
+    document.body.classList.remove('dark');
+  }
+}
+
+function showModal(title, html){
+  $('modalTitle').textContent = title;
+  $('modalBody').innerHTML = html;
+  $('modal').classList.add('open');
+}
+
+function closeModal(){
+  $('modal').classList.remove('open');
+  const body = $('modalBody');
+  if(body){
+    body.style.maxHeight = '';
+    body.style.overflowY = '';
+  }
+}
+
+function getCheatSheetHtml(){
+  return (
+    '<div style="display:grid;gap:12px">' +
+      '<div style="padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:var(--panel2)">' +
+        '<strong>Rev-Logger Operator Cheat Sheet</strong>' +
+        '<div class="small subtle" style="margin-top:6px">Quick field reference for startup, ICS-214 header setup, transcript workflow, weather awareness, and export review.</div>' +
+      '</div>' +
+      '<div style="padding:12px 14px;border:1px solid var(--border);border-radius:12px">' +
+        '<strong>1) Startup sequence</strong>' +
+        '<ol style="margin:8px 0 0 20px">' +
+          '<li>Activate the Python environment.</li>' +
+          '<li>Start the backend: <code>uvicorn server_patched_stable:app --reload</code></li>' +
+          '<li>Open Rev-Logger in Chrome.</li>' +
+          '<li>Allow microphone access.</li>' +
+          '<li>Fill out the ICS-214 header.</li>' +
+          '<li>Load weather for the correct ZIP or location.</li>' +
+          '<li>Click <strong>Start STT</strong>.</li>' +
+        '</ol>' +
+      '</div>' +
+      '<div style="padding:12px 14px;border:1px solid var(--border);border-radius:12px">' +
+        '<strong>2) ICS-214 header checklist</strong>' +
+        '<ul style="margin:8px 0 0 20px">' +
+          '<li><strong>Incident name:</strong> event, activation, or exercise</li>' +
+          '<li><strong>Date / operational period:</strong> current shift timeframe</li>' +
+          '<li><strong>Unit / resource:</strong> desk, team, mobile unit, shelter, net control</li>' +
+          '<li><strong>Prepared by:</strong> operator name and callsign if useful</li>' +
+          '<li><strong>Location / assignment:</strong> county, EOC, shelter, sector, etc.</li>' +
+        '</ul>' +
+      '</div>' +
+      '<div style="padding:12px 14px;border:1px solid var(--border);border-radius:12px">' +
+        '<strong>3) Live transcript workflow</strong>' +
+        '<ul style="margin:8px 0 0 20px">' +
+          '<li>The transcript pane is your <strong>draft capture stream</strong>.</li>' +
+          '<li>Do not treat raw transcript as the final log.</li>' +
+          '<li>Pull out callsign, report details, destination, and action taken.</li>' +
+          '<li>Convert that into a clean entry in the log area.</li>' +
+        '</ul>' +
+      '</div>' +
+      '<div style="padding:12px 14px;border:1px solid var(--border);border-radius:12px">' +
+        '<strong>4) Weather watches and warnings</strong>' +
+        '<ul style="margin:8px 0 0 20px">' +
+          '<li><strong>Watch:</strong> conditions are favorable.</li>' +
+          '<li><strong>Warning:</strong> hazard is occurring, imminent, or specifically identified.</li>' +
+          '<li>Use the weather area for <strong>situational awareness</strong>.</li>' +
+          '<li>Open alert details when a watch or warning changes.</li>' +
+        '</ul>' +
+      '</div>' +
+      '<div style="padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:var(--panel2)">' +
+        '<strong>Fast reminder</strong>' +
+        '<div style="margin-top:8px">Start backend → open Rev-Logger → fill ICS-214 header → load weather → start STT → turn transcript into clean entries → review before export.</div>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
+function showCheatSheetModal(){
+  showModal('Operator Cheat Sheet', getCheatSheetHtml());
+  const body = $('modalBody');
+  if(body){
+    body.style.maxHeight = '70vh';
+    body.style.overflowY = 'auto';
+  }
+}
+
+function openUserManualTab(){
+  const w = window.open('revlogger_user_manual.html', '_blank');
+  if(!w){
+    showModal('Popup Blocked', '<p>Allow pop-ups for the User Manual tab, or open <code>revlogger_user_manual.html</code> directly from the same folder as Rev-Logger.</p>');
+  }
+}
+
+function closeAllDropdowns(){
+  ['importMenu','exportMenu','helpMenu'].forEach(function(id){
+    const el = $(id);
+    if(el) el.classList.remove('open');
+  });
+}
+
+function toggleDropdown(menuId){
+  const menu = $(menuId);
+  if(!menu) return;
+  const willOpen = !menu.classList.contains('open');
+  closeAllDropdowns();
+  if(willOpen) menu.classList.add('open');
+}
+
+function showToast(message){
+  const wrap = $('toastWrap');
+  if(!wrap) return;
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = message;
+  wrap.appendChild(toast);
+  requestAnimationFrame(function(){
+    toast.classList.add('show');
+  });
+  setTimeout(function(){
+    toast.classList.remove('show');
+    setTimeout(function(){
+      toast.remove();
+    }, 220);
+  }, 1800);
+}
+
+function downloadBlob(blob, filename){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(function(){
+    URL.revokeObjectURL(url);
+  }, 1000);
+}
+
+function safeFileBase(){
+  return (($('incidentName').value || 'rev_logger').trim().replace(/[^a-z0-9_-]+/gi, '_')) || 'rev_logger';
+}
+
+function setRunState(state){
+  const el = $('runState');
+  const normalized = ['running','paused','ended'].includes(state) ? state : 'idle';
+  el.className = 'status ' + normalized;
+  el.textContent =
+    normalized === 'running' ? 'Running' :
+    normalized === 'paused' ? 'Paused' :
+    normalized === 'ended' ? 'Ended' : 'Idle';
+  updateRunControls();
+}
+
+function updateRunControls(){
+  const current = $('runState').textContent;
+  const state =
+    current === 'Running' ? 'running' :
+    current === 'Paused' ? 'paused' :
+    current === 'Ended' ? 'ended' : 'idle';
+
+  $('btnStart').disabled = state !== 'idle' && state !== 'ended';
+  $('btnPause').disabled = state !== 'running';
+  $('btnResume').disabled = state !== 'paused';
+  $('btnEnd').disabled = state !== 'running' && state !== 'paused';
+}
+
+
+function appendClientLog(msg){
+  const ts = new Date().toLocaleTimeString();
+  clientLogLines.push('[' + ts + '] ' + msg);
+  if(clientLogLines.length > 800) clientLogLines = clientLogLines.slice(-800);
+  console.log(msg);
+}
+
+function setSttStatus(msg){
+  $('sttStatus').textContent = msg;
+  appendClientLog(msg);
+}
+
+function getClientLogText(){
+  return clientLogLines.join('\n');
+}
+
+function showClientLogModal(){
+  showModal(
+    'Client Log',
+    '<div class="row" style="margin-bottom:10px">' +
+      '<button id="modalClearClientLog" type="button">Clear Client Log</button>' +
+    '</div>' +
+    '<pre class="client-log-pre">' + esc(getClientLogText() || 'Client log is empty.') + '</pre>'
+  );
+  const btn = $('modalClearClientLog');
+  if(btn){
+    btn.addEventListener('click', function(){
+      clientLogLines = [];
+      showClientLogModal();
+    });
+  }
+}
+
+function updateTestModeVisibility(){
+  const enabled = !!$('testModeToggle').checked;
+  document.querySelectorAll('.stt-test-only').forEach(function(el){
+    el.hidden = !enabled;
+  });
+}
+
+function updateLevelStatsFromFloat32(samples){
+  if(!samples || !samples.length) return;
+  let sumSq = 0;
+  let peak = 0;
+  for(let i = 0; i < samples.length; i++){
+    const abs = Math.abs(samples[i]);
+    if(abs > peak) peak = abs;
+    sumSq += samples[i] * samples[i];
+  }
+  const rms = Math.sqrt(sumSq / samples.length) || 1e-8;
+  const dbfs = 20 * Math.log10(Math.max(rms, 1e-8));
+  const peakPct = Math.max(0, Math.min(100, peak * 100));
+
+  if(peak >= 0.98) lastClipAt = performance.now();
+  peakHold = Math.max(peakHold * 0.94, peakPct);
+
+  $('meterFill').style.width = peakPct.toFixed(1) + '%';
+  $('meterPeak').style.left = Math.max(0, Math.min(100, peakHold)).toFixed(1) + '%';
+  $('meterText').textContent = 'Level: ' + dbfs.toFixed(1) + ' dBFS';
+
+  const clippedRecently = (performance.now() - lastClipAt) < 1200;
+  $('clipText').textContent = clippedRecently ? 'CLIP' : (peakPct > 85 ? 'HOT' : 'OK');
+  $('clipText').classList.toggle('clip', clippedRecently);
+}
+
+function resetMeter(){
+  peakHold = 0;
+  lastClipAt = 0;
+  $('meterFill').style.width = '0%';
+  $('meterPeak').style.left = '0%';
+  $('meterText').textContent = 'Level: -- dBFS';
+  $('clipText').textContent = 'OK';
+  $('clipText').classList.remove('clip');
+}
+
+function startMeterLoop(){
+  if(!analyserNode) return;
+  const data = new Float32Array(analyserNode.fftSize);
+  const tick = function(){
+    if(!sttRunning || !analyserNode) return;
+    analyserNode.getFloatTimeDomainData(data);
+    updateLevelStatsFromFloat32(data);
+    meterAnim = requestAnimationFrame(tick);
+  };
+  meterAnim = requestAnimationFrame(tick);
+}
+
+function mergeToMono(inputBuffer){
+  const channels = inputBuffer.numberOfChannels;
+  const length = inputBuffer.getChannelData(0).length;
+  const mono = new Float32Array(length);
+  if(channels === 1){
+    mono.set(inputBuffer.getChannelData(0));
+    return mono;
+  }
+  for(let c = 0; c < channels; c++){
+    const data = inputBuffer.getChannelData(c);
+    for(let i = 0; i < length; i++) mono[i] += data[i] / channels;
+  }
+  return mono;
+}
+
+function downsampleBuffer(buffer, inputSampleRate, outputSampleRate){
+  if(outputSampleRate >= inputSampleRate) return buffer;
+  const ratio = inputSampleRate / outputSampleRate;
+  const newLength = Math.round(buffer.length / ratio);
+  const result = new Float32Array(newLength);
+  let offsetResult = 0;
+  let offsetBuffer = 0;
+  while(offsetResult < result.length){
+    const nextOffsetBuffer = Math.round((offsetResult + 1) * ratio);
+    let accum = 0;
+    let count = 0;
+    for(let i = offsetBuffer; i < nextOffsetBuffer && i < buffer.length; i++){
+      accum += buffer[i];
+      count++;
+    }
+    result[offsetResult] = count ? (accum / count) : 0;
+    offsetResult++;
+    offsetBuffer = nextOffsetBuffer;
+  }
+  return result;
+}
+
+function floatTo16BitPCM(float32Array){
+  const output = new Int16Array(float32Array.length);
+  for(let i = 0; i < float32Array.length; i++){
+    const s = Math.max(-1, Math.min(1, float32Array[i]));
+    output[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+  }
+  return output;
+}
+
+function encodeWavFromInt16(samples, sampleRate){
+  const bytesPerSample = 2;
+  const dataSize = samples.length * bytesPerSample;
+  const buffer = new ArrayBuffer(44 + dataSize);
+  const view = new DataView(buffer);
+
+  function writeString(offset, str){
+    for(let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+  }
+
+  writeString(0, 'RIFF');
+  view.setUint32(4, 36 + dataSize, true);
+  writeString(8, 'WAVE');
+  writeString(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * bytesPerSample, true);
+  view.setUint16(32, bytesPerSample, true);
+  view.setUint16(34, 16, true);
+  writeString(36, 'data');
+  view.setUint32(40, dataSize, true);
+
+  let offset = 44;
+  for(let i = 0; i < samples.length; i++, offset += 2){
+    view.setInt16(offset, samples[i], true);
+  }
+  return new Blob([buffer], { type: 'audio/wav' });
+}
+
+function commonEdgeWordCount(aWords, bWords, maxWords){
+  const limit = Math.min(maxWords || 8, aWords.length, bWords.length);
+  for(let n = limit; n > 0; n--){
+    const aTail = aWords.slice(-n).join(' ').toLowerCase();
+    const bHead = bWords.slice(0, n).join(' ').toLowerCase();
+    if(aTail === bHead) return n;
+  }
+  return 0;
+}
+
+function dedupeChunkText(prevCommitted, newText){
+  const cleanNew = String(newText || '').trim();
+  if(!cleanNew) return '';
+  if(!$('dedupeToggle').checked) return cleanNew;
+  const prevWords = String(prevCommitted || '').trim().split(/\s+/).filter(Boolean);
+  const newWords = cleanNew.split(/\s+/).filter(Boolean);
+  const overlap = commonEdgeWordCount(prevWords, newWords, 8);
+  return newWords.slice(overlap).join(' ').trim();
+}
+
+function appendTranscript(text){
+  const cleaned = dedupeChunkText($('sttOutput').innerText, text);
+  if(!cleaned) return;
+  $('sttOutput').textContent += ($('sttOutput').innerText.trim() ? ' ' : '') + cleaned;
+  persistState();
+  extractCallsigns($('sttOutput').innerText).forEach(addCallsign);
+}
+
+function flushChunkIfReady(force){
+  if(!pcmFrames) return;
+  const targetFrames = Math.round(captureSampleRate * (chunkMs / 1000));
+  if(!force && pcmFrames < targetFrames) return;
+
+  const needed = force ? pcmFrames : targetFrames;
+  const combined = new Float32Array(needed);
+  let offset = 0;
+
+  while(offset < needed && pcmQueue.length){
+    const block = pcmQueue[0];
+    const take = Math.min(block.length, needed - offset);
+    combined.set(block.subarray(0, take), offset);
+    offset += take;
+    if(take < block.length){
+      pcmQueue[0] = block.subarray(take);
+    } else {
+      pcmQueue.shift();
+    }
+  }
+  pcmFrames -= needed;
+
+  const downsampled = downsampleBuffer(combined, captureSampleRate, 16000);
+  const int16 = floatTo16BitPCM(downsampled);
+  const wavBlob = encodeWavFromInt16(int16, 16000);
+  const seq = ++seqCounter;
+
+  pendingChunks.push({
+    seq: seq,
+    chunkMs: chunkMs,
+    mimeType: wavBlob.type,
+    blob: wavBlob
+  });
+
+  appendClientLog('Queued chunk seq=' + seq + ' mime=' + wavBlob.type + ' bytes=' + wavBlob.size + ' captureRate=' + captureSampleRate + 'Hz');
+  drainQueue();
+}
+
+async function drainQueue(){
+  if(sendInFlight || pendingChunks.length === 0) return;
+  sendInFlight = true;
+
+  try {
+    while(pendingChunks.length){
+      const item = pendingChunks.shift();
+      const formData = new FormData();
+      formData.append('audio', item.blob, 'chunk_' + item.seq + '.wav');
+      formData.append('mime_type', item.mimeType);
+      formData.append('seq', String(item.seq));
+      formData.append('chunk_ms', String(item.chunkMs));
+
+      appendClientLog('Sending seq=' + item.seq + ' mime=' + item.mimeType + ' bytes=' + item.blob.size);
+      const res = await fetch('http://127.0.0.1:8000/transcribe', {
+        method: 'POST',
+        body: formData
+      });
+
+      const raw = await res.text();
+      let data = null;
+      try { data = raw ? JSON.parse(raw) : null; } catch(e) {}
+
+      if(!res.ok){
+        appendClientLog('Server error seq=' + item.seq + ' status=' + res.status + ' body=' + raw);
+        setSttStatus('STT server error on chunk ' + item.seq);
+        continue;
+      }
+
+      const text = data && data.text ? data.text : '';
+      appendClientLog(
+        'OK seq=' + item.seq +
+        ' size=' + (data && data.size_bytes != null ? data.size_bytes : '?') +
+        ' sniffed=' + (data && data.sniffed_container != null ? data.sniffed_container : '?') +
+        ' elapsed_ms=' + (data && data.elapsed_ms != null ? data.elapsed_ms : '?') +
+        ' text=' + JSON.stringify(text)
+      );
+      if(text) appendTranscript(text);
+      setSttStatus('STT running (last chunk ' + item.seq + ' OK)');
+    }
+  } catch(err){
+    console.error(err);
+    appendClientLog('Request failed: ' + (err.message || err));
+    setSttStatus('STT request failed');
+  } finally {
+    sendInFlight = false;
+  }
+}
+
+async function startSTT(){
+  if(sttRunning) return;
+  try {
+    chunkMs = Number($('chunkMsSelect').value) || 2000;
+    mediaStream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        channelCount: 1,
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false
+      }
+    });
+
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    captureSampleRate = audioContext.sampleRate;
+    sourceNode = audioContext.createMediaStreamSource(mediaStream);
+    analyserNode = audioContext.createAnalyser();
+    analyserNode.fftSize = 2048;
+    analyserNode.smoothingTimeConstant = 0.15;
+    processorNode = audioContext.createScriptProcessor(4096, sourceNode.channelCount || 1, 1);
+
+    pcmQueue = [];
+    pcmFrames = 0;
+    pendingChunks = [];
+    seqCounter = 0;
+
+    processorNode.onaudioprocess = function(event){
+      if(!sttRunning) return;
+      const mono = mergeToMono(event.inputBuffer);
+      updateLevelStatsFromFloat32(mono);
+      pcmQueue.push(mono);
+      pcmFrames += mono.length;
+      flushChunkIfReady(false);
+    };
+
+    sourceNode.connect(analyserNode);
+    sourceNode.connect(processorNode);
+    processorNode.connect(audioContext.destination);
+
+    resetMeter();
+    sttRunning = true;
+    $('btnSttStart').disabled = true;
+    $('btnSttStop').disabled = false;
+    startMeterLoop();
+    setSttStatus('STT running (PCM → WAV, ' + chunkMs + ' ms chunks, source ' + captureSampleRate + ' Hz)');
+  } catch(err){
+    console.error(err);
+    appendClientLog('Mic start failed: ' + (err.message || err));
+    setSttStatus('Mic permission/error');
+  }
+}
+
+async function stopSTT(){
+  if(!sttRunning) return;
+  sttRunning = false;
+
+  try {
+    flushChunkIfReady(true);
+    await drainQueue();
+  } catch(err){
+    console.error(err);
+  }
+
+  try {
+    if(meterAnim) cancelAnimationFrame(meterAnim);
+    meterAnim = null;
+    if(processorNode) processorNode.disconnect();
+    if(analyserNode) analyserNode.disconnect();
+    if(sourceNode) sourceNode.disconnect();
+    if(audioContext) await audioContext.close();
+  } catch(e) {}
+
+  if(mediaStream) mediaStream.getTracks().forEach(function(t){ t.stop(); });
+
+  audioContext = null;
+  mediaStream = null;
+  sourceNode = null;
+  processorNode = null;
+  analyserNode = null;
+  resetMeter();
+  $('btnSttStart').disabled = false;
+  $('btnSttStop').disabled = true;
+  setSttStatus('STT idle');
+}
+
+
+function parseCsv(text){
+  const rows = [];
+  let row = [];
+  let cur = '';
+  let inQuotes = false;
+
+  for(let i = 0; i < text.length; i++){
+    const ch = text[i];
+    const next = text[i + 1];
+
+    if(ch === '"'){
+      if(inQuotes && next === '"'){
+        cur += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if(ch === ',' && !inQuotes){
+      row.push(cur);
+      cur = '';
+    } else if((ch === '\n' || ch === '\r') && !inQuotes){
+      if(ch === '\r' && next === '\n') i++;
+      row.push(cur);
+      if(row.some(v => String(v).trim() !== '')) rows.push(row);
+      row = [];
+      cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+
+  row.push(cur);
+  if(row.some(v => String(v).trim() !== '')) rows.push(row);
+  return rows;
+}
+
+function addCallsign(callsign){
+  const cs = String(callsign || '').trim().toUpperCase();
+  if(!cs) return;
+
+  const list = $('callsignList');
+  const existing = Array.from(list.options).find(o => o.value === cs);
+  if(existing) existing.remove();
+
+  const opt = document.createElement('option');
+  opt.value = cs;
+  opt.textContent = cs;
+  list.prepend(opt);
+}
+
+function insertSelectedCallsign(){
+  if($('callsignList').value){
+    $('entryCallsign').value = $('callsignList').value;
+    maybeApplyNwsTagFromCallsign();
+    $('messageInput').focus();
+    showToast('Callsign inserted from Callsigns Heard.');
+  }
+}
+
+function maybeApplyNwsTagFromCallsign(){
+  const cs = $('entryCallsign').value.trim().toUpperCase();
+  $('entryNwsTag').value = nwsCallsignSet.has(cs) ? 'Yes' : 'No';
+}
+
+function renderHighlightedText(text){
+  let html = esc(String(text || ''));
+  const items = keywordItems
+    .filter(item => item && item.term)
+    .slice()
+    .sort((a, b) => String(b.term || '').length - String(a.term || '').length);
+
+  items.forEach(function(item){
+    const term = String(item.term || '').trim();
+    if(!term) return;
+    const color = item.color || '#fff59d';
+    const escapedTerm = regexEscape(term);
+    const useBoundaries = /^\w[\w\s-]*\w$|^\w$/.test(term);
+    const pattern = useBoundaries ? ('\\b(' + escapedTerm + ')\\b') : ('(' + escapedTerm + ')');
+    const re = new RegExp(pattern, 'gi');
+    html = html.replace(re, '<span class="highlight" style="background:' + esc(color) + '">$1</span>');
+  });
+
+  return html;
+}
+
+function syncMessageHighlight(){
+  const input = $('messageInput');
+  const backdrop = $('messageHighlight');
+  const value = String(input.value || '');
+
+  if(value){
+    backdrop.innerHTML = renderHighlightedText(value) + '\n';
+    backdrop.classList.remove('is-empty');
+  } else {
+    backdrop.textContent = input.getAttribute('placeholder') || '';
+    backdrop.classList.add('is-empty');
+  }
+
+  backdrop.scrollTop = input.scrollTop;
+  backdrop.scrollLeft = input.scrollLeft;
+}
+
+function refreshEventLogHighlights(){
+  $('eventLog').querySelectorAll('tbody tr').forEach(function(tr){
+    const cell = tr.querySelector('td.activity-cell');
+    if(!cell) return;
+    const text = cell.getAttribute('data-plain-text') || cell.textContent || '';
+    cell.setAttribute('data-plain-text', text);
+    cell.innerHTML = renderHighlightedText(text);
+  });
+}
+
+function appendLogRow(date, time, callsign, nws, activity){
+  const tr = document.createElement('tr');
+  const activityText = String(activity || '');
+  tr.innerHTML =
+    '<td>' + esc(date) + '</td>' +
+    '<td>' + esc(time) + '</td>' +
+    '<td>' + esc(callsign) + '</td>' +
+    '<td>' + esc(nws === 'Yes' ? 'YES' : '') + '</td>' +
+    '<td class="activity-cell" data-plain-text="' + esc(activityText) + '">' + renderHighlightedText(activityText) + '</td>';
+  $('eventLog').querySelector('tbody').appendChild(tr);
+}
+
+function isTypingTarget(el){
+  if(!el) return false;
+  const tag = (el.tagName || '').toUpperCase();
+  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable;
+}
+
+function showKeyboardShortcuts(){
+  showModal('Keyboard Shortcuts',
+    '<div class="shortcuts-grid">' +
+      '<div class="kbd-seq"><span class="kbd">Enter</span></div>' +
+      '<div>In <strong>Callsign</strong>, move to <strong>Message Traffic</strong>.</div>' +
+
+      '<div class="kbd-seq"><span class="kbd">Ctrl</span><span class="kbd">Enter</span></div>' +
+      '<div>Log the current entry on Windows / Linux.</div>' +
+
+      '<div class="kbd-seq"><span class="kbd">⌘</span><span class="kbd">Enter</span></div>' +
+      '<div>Log the current entry on Mac.</div>' +
+
+      '<div class="kbd-seq"><span class="kbd">Alt</span><span class="kbd">L</span></div>' +
+      '<div>Log entry on Windows / Linux.</div>' +
+
+      '<div class="kbd-seq"><span class="kbd">⌥</span><span class="kbd">L</span></div>' +
+      '<div>Log entry on Mac.</div>' +
+    '</div>' +
+
+    '<div class="shortcuts-grid">' +
+      '<div class="kbd-seq"><span class="kbd">Alt</span><span class="kbd">C</span></div>' +
+      '<div>Clear the manual entry fields and return focus to <strong>Callsign</strong> on Windows / Linux.</div>' +
+
+      '<div class="kbd-seq"><span class="kbd">⌥</span><span class="kbd">C</span></div>' +
+      '<div>Clear the manual entry fields and return focus to <strong>Callsign</strong> on Mac.</div>' +
+
+      '<div class="kbd-seq"><span class="kbd">Alt</span><span class="kbd">M</span></div>' +
+      '<div>Copy the current transcript selection into <strong>Message Traffic</strong> on Windows / Linux.</div>' +
+
+      '<div class="kbd-seq"><span class="kbd">⌥</span><span class="kbd">M</span></div>' +
+      '<div>Copy the current transcript selection into <strong>Message Traffic</strong> on Mac.</div>' +
+    '</div>' +
+
+    '<div class="shortcuts-grid">' +
+      '<div class="kbd-seq"><span class="kbd">?</span></div>' +
+      '<div>Open this keyboard shortcuts help window when you are not typing in a field.</div>' +
+
+      '<div class="kbd-seq"><span class="kbd">/</span></div>' +
+      '<div>Focus <strong>Callsign</strong> when you are not typing in a field.</div>' +
+
+      '<div class="kbd-seq"><span class="kbd">Esc</span></div>' +
+      '<div>Close the active modal window.</div>' +
+
+      '<div class="kbd-seq"><span class="kbd">Double-click</span></div>' +
+      '<div>Insert a callsign from <strong>Callsigns Heard</strong> into the manual entry form.</div>' +
+    '</div>' +
+
+    '<div class="shortcuts-note">On Mac, <span class="kbd">⌥</span> is the Option key and <span class="kbd">⌘</span> is the Command key.</div>'
+  );
+}
+
+function handleGlobalShortcuts(e){
+  const active = document.activeElement;
+  const typing = isTypingTarget(active);
+
+  if(e.key === 'Escape' && $('modal').classList.contains('open')){
+    e.preventDefault();
+    closeModal();
+    return;
+  }
+
+  if((e.ctrlKey || e.metaKey) && e.key === 'Enter'){
+    e.preventDefault();
+    addLogEntry();
+    return;
+  }
+
+  if(e.altKey && !e.shiftKey && !e.ctrlKey && !e.metaKey){
+    const key = String(e.key || '').toLowerCase();
+    if(key === 'l'){
+      e.preventDefault();
+      addLogEntry();
+      return;
+    }
+    if(key === 'c'){
+      e.preventDefault();
+      clearEntryFields(true);
+      persistState();
+      return;
+    }
+    if(key === 'm'){
+      e.preventDefault();
+      insertSelectedTranscriptIntoMessage();
+      persistState();
+      return;
+    }
+  }
+
+  if((e.key === '?' || (e.shiftKey && e.key === '/')) && !typing){
+    e.preventDefault();
+    showKeyboardShortcuts();
+    return;
+  }
+
+  if(e.key === '/' && !typing){
+    e.preventDefault();
+    $('entryCallsign').focus();
+    $('entryCallsign').select();
+  }
+}
+
+function clearEntryFields(showNotice){
+  $('entryCallsign').value = '';
+  $('entryNwsTag').value = 'No';
+  $('messageInput').value = '';
+  syncMessageHighlight();
+  $('entryCallsign').focus();
+  if(showNotice) showToast('Entry cleared.');
+}
+
+function clearLog(){
+  const tbody = $('eventLog').querySelector('tbody');
+  if(!tbody || !tbody.children.length){
+    showToast('Event log is already empty.');
+    return;
+  }
+  if(!window.confirm('Are you SURE? This will permanently clear the event log.')){
+    return;
+  }
+  tbody.innerHTML = '';
+  persistState();
+  showToast('Event log cleared.');
+}
+
+function addLogEntry(prefill){
+  const parts = nowParts(new Date());
+  const callsign = String(prefill && prefill.callsign != null ? prefill.callsign : $('entryCallsign').value).trim().toUpperCase() || '—';
+  const nws = String(prefill && prefill.nws != null ? prefill.nws : $('entryNwsTag').value).trim() || 'No';
+  const activity = String(prefill && prefill.message != null ? prefill.message : $('messageInput').value).trim();
+
+  if(!activity){
+    showModal('Log Entry', '<p>Enter message traffic before logging.</p>');
+    return;
+  }
+
+  appendLogRow(parts.date, parts.time, callsign, nws, activity);
+
+  if(callsign !== '—') addCallsign(callsign);
+  if(nws === 'Yes' && callsign !== '—') nwsCallsignSet.add(callsign);
+
+  clearEntryFields();
+  persistState();
+  showToast('Entry logged.');
+}
+
+function addSystemEntry(message){
+  addLogEntry({ callsign: 'SYSTEM', nws: 'No', message: message });
+}
+
+function gatherRows(){
+  return Array.from($('eventLog').querySelectorAll('tbody tr')).map(tr => {
+    const td = tr.querySelectorAll('td');
+    return {
+      date: td[0] ? td[0].textContent : '',
+      time: td[1] ? td[1].textContent : '',
+      callsign: td[2] ? td[2].textContent : '',
+      nws: td[3] && td[3].textContent.trim().toUpperCase() === 'YES' ? 'Yes' : 'No',
+      activity: td[4] ? td[4].textContent : ''
+    };
+  });
+}
+
+function renderScripts(){
+  const wrap = $('scriptButtons');
+  wrap.innerHTML = '';
+  scriptItems.forEach(function(item, idx){
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = item.label || ('Script ' + (idx + 1));
+    btn.addEventListener('click', function(){
+      showModal(item.label || 'Script', '<pre style="white-space:pre-wrap;margin:0">' + esc(item.text || '') + '</pre>');
+    });
+    wrap.appendChild(btn);
+  });
+}
+
+
+function renderCommonReports(){
+  const wrap = $('commonReportsWrap');
+  const sel = $('commonReportsSelect');
+  if(!wrap || !sel) return;
+
+  sel.innerHTML = '<option value="">Select a common report…</option>';
+
+  if(!Array.isArray(commonReportsItems) || !commonReportsItems.length){
+    wrap.classList.remove('show');
+    return;
+  }
+
+  commonReportsItems.forEach(function(item){
+    const opt = document.createElement('option');
+    opt.value = item;
+    opt.textContent = item;
+    sel.appendChild(opt);
+  });
+
+  sel.value = '';
+  wrap.classList.add('show');
+}
+
+function insertCommonReportIntoMessage(text){
+  const item = String(text || '').trim();
+  if(!item) return;
+
+  const msg = $('messageInput');
+  const existing = String(msg.value || '').trim();
+
+  if(!existing){
+    msg.value = item;
+  } else {
+    msg.value = existing + '\n' + item;
+  }
+
+  syncMessageHighlight();
+  persistState();
+  msg.focus();
+}
+
+function extractCallsigns(text){
+  const patterns = [
+    /\b(?:[AKNW][A-Z]?\d[A-Z]{1,3}|[A-Z]{1,2}\d[A-Z]{1,3})\b/g,   // amateur radio
+    /\b[KW][A-Z]{3}\d{3}\b/g,                                        // GMRS / 4 letters + 3 digits
+    /\b[KW][A-Z]{2,4}\d{3,5}\b/g                                     // many FCC land mobile / public safety / business formats
+  ];
+
+  const found = new Set();
+  const source = String(text || '').toUpperCase();
+
+  patterns.forEach(function(re){
+    const matches = source.match(re) || [];
+    matches.forEach(function(cs){
+      found.add(cs);
+    });
+  });
+
+  return Array.from(found);
+}
+
+function renderTranscript(text){
+  $('sttOutput').innerHTML = renderHighlightedText(text);
+  extractCallsigns(text).forEach(addCallsign);
+}
+
+function insertSelectedTranscriptIntoMessage(){
+  const sel = String(window.getSelection ? window.getSelection().toString() : '').trim();
+  if(!sel){
+    showToast('No transcript text selected.');
+    return;
+  }
+  $('messageInput').value = $('messageInput').value ? $('messageInput').value + ' ' + sel : sel;
+  syncMessageHighlight();
+  $('messageInput').focus();
+  showToast('Transcript copied to Message Traffic.');
+}
+
+function copySelectedTranscript(){
+  const sel = String(window.getSelection ? window.getSelection().toString() : '').trim();
+  if(!sel){
+    showToast('No transcript text selected.');
+    return;
+  }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(sel);
+    showToast('Selected transcript copied.');
+  }
+}
+
+function clearTranscript(){
+  $('sttOutput').textContent = '';
+  persistState();
+}
+
+function injectSampleTranscript(){
+  const sample = 'NWS Fort Worth to all stations, severe thunderstorm warning for Parker County until 9 PM. KC9UMR reports quarter size hail near Weatherford. K5ABC advises rotation west of Hudson Oaks. Tornado watch remains in effect.';
+  renderTranscript(sample);
+  persistState();
+}
+
+function exportTempLog(){
+  downloadBlob(new Blob([JSON.stringify(buildState(), null, 2)], { type: 'application/json' }), safeFileBase() + '_temp_log.json');
+}
+
+function exportCsvLog(){
+  const rows = [['Date','Time','CALLSIGN','NWS?','Notable Activities / Message Traffic']]
+    .concat(gatherRows().map(r => [r.date, r.time, r.callsign, r.nws, r.activity]));
+  const csv = rows.map(r => r.map(csvEscape).join(',')).join('\n');
+  downloadBlob(new Blob([csv], { type: 'text/csv' }), safeFileBase() + '_event_log.csv');
+}
+
+function getIcs214Data(){
+  return {
+    incidentName: $('incidentName').value || 'Incident',
+    assignmentName: $('assignmentName').value || '',
+    teamName: $('teamName').value || '',
+    incidentLocation: $('incidentLocation').value || '',
+    opPeriodFrom: $('opPeriodFrom').value || '',
+    opPeriodTo: $('opPeriodTo').value || '',
+    preparedBy: $('preparedBy').value || '',
+    rows: gatherRows()
+  };
+}
+
+
+function fmtPeriod(v){
+  if(!v) return '—';
+  const d = new Date(v);
+  return isNaN(d) ? esc(v) : esc(d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }));
+}
+
+function ics214CellLines(text){
+  const lines = String(text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  if(!lines.length) return '&nbsp;';
+  return lines.map(function(line){ return '<span class="ln">' + (esc(line) || '&nbsp;') + '</span>'; }).join('');
+}
+
+function ics214Styles(){
+  return 'html,body{margin:0;padding:0;background:#fff;color:#000;font-family:Arial,Helvetica,sans-serif;}' +
+    'body{padding:0;box-sizing:border-box;}' +
+    '.ics214-page{width:100%;box-sizing:border-box;display:block;overflow:visible;}' +
+    '.page-break{page-break-after:always;break-after:page;}' +
+    '.titlewrap{display:grid;grid-template-columns:110px 1fr 110px;align-items:center;border:2px solid #000;border-bottom:none;margin:0;flex:0 0 auto;}' +
+    '.left,.right{padding:6px 8px;font-weight:700;text-align:center;line-height:1;margin:0;}' +
+    '.center{padding:8px 6px;font-weight:800;font-size:16px;text-align:center;border-left:2px solid #000;border-right:2px solid #000;line-height:1;margin:0;}' +
+    '.header-block{flex:0 0 auto;}' +
+    '.logwrap{flex:1 1 auto;display:flex;flex-direction:column;min-height:0;overflow:hidden;}' +
+    'table{width:100%;border-collapse:collapse;table-layout:fixed;border-spacing:0;margin:0;}' +
+    '.head,.log,.foot{margin:0;border-spacing:0;}' +
+    '.head td,.foot td{border:2px solid #000;vertical-align:top;padding:0;}' +
+    '.log{height:auto;}' +
+    '.log th,.log td{border:1.4px solid #000;vertical-align:top;padding:1px 3px;margin:0;box-sizing:border-box;}' +
+    '.log thead th{font-size:10px;text-align:left;line-height:1;padding:2px 3px;margin:0;font-weight:700;}' +
+    '.log tbody td{font-size:10px;line-height:1;padding:1px 3px;margin:0;}' +
+    '.log tbody tr{page-break-inside:avoid;break-inside:avoid;}' +
+    '.log tbody tr.blank td{height:24px;}' +
+    '.bn{font-size:10px;font-weight:700;border-bottom:1px solid #000;padding:2px 5px;line-height:1;margin:0;}' +
+    '.bv{min-height:28px;padding:3px 5px;font-size:11px;line-height:1;margin:0;}' +
+    '.log td *, .log th *, .head td *, .foot td *{margin:0 !important;padding:0 !important;line-height:1 !important;-webkit-margin-before:0 !important;-webkit-margin-after:0 !important;}' +
+    '.activity-cell{padding-top:1px !important;padding-bottom:1px !important;}' +
+    '.activity-cell .ln{display:block;margin:0 !important;padding:0 !important;line-height:1 !important;height:auto;min-height:0;-webkit-margin-before:0 !important;-webkit-margin-after:0 !important;}' +
+    '.num{width:4.5%;text-align:center;}' +
+    '.date{width:10%;}' +
+    '.time{width:7%;}' +
+    '.callsign{width:12%;}' +
+    '.nws{width:6%;text-align:center;}' +
+    '.activity{width:60.5%;}' +
+    '.measure-host{position:fixed;left:-20000px;top:0;width:10.4in;height:auto;visibility:hidden;pointer-events:none;overflow:hidden;background:#fff;}' +
+    '@media print{' +
+      '@page{size:letter landscape;margin:.25in;}' +
+      'html,body{width:100%;height:auto;}' +
+      'body{padding:0;}' +
+      '*{-webkit-print-color-adjust:exact;print-color-adjust:exact;}' +
+      'p,div,span{margin:0 !important;padding:0 !important;line-height:1 !important;-webkit-margin-before:0 !important;-webkit-margin-after:0 !important;}' +
+    '}';
+}
+
+function buildIcs214RowHtml(r, seq, isBlank){
+  if(isBlank){
+    return '<tr class="blank">' +
+      '<td class="num">' + seq + '</td>' +
+      '<td class="date">&nbsp;</td>' +
+      '<td class="time">&nbsp;</td>' +
+      '<td class="callsign">&nbsp;</td>' +
+      '<td class="nws">&nbsp;</td>' +
+      '<td class="activity activity-cell">&nbsp;</td>' +
+      '</tr>';
+  }
+
+  return '<tr>' +
+    '<td class="num">' + seq + '</td>' +
+    '<td class="date">' + esc(r.date || '') + '</td>' +
+    '<td class="time">' + esc((r.time || '').slice(0,5)) + '</td>' +
+    '<td class="callsign">' + esc(r.callsign || '') + '</td>' +
+    '<td class="nws">' + esc(r.nws === 'Yes' ? 'YES' : '') + '</td>' +
+    '<td class="activity activity-cell">' + ics214CellLines(r.activity || '') + '</td>' +
+    '</tr>';
+}
+
+function buildIcs214PageHtml(data, opts){
+  const pageNo = opts.pageNo;
+  const totalPages = opts.totalPages;
+  const rows = opts.rows || [];
+  const blankRows = opts.blankRows || 0;
+  const seqStart = opts.seqStart || 1;
+  const generated = opts.generated || new Date().toLocaleString();
+  const pageClass = opts.pageBreak ? ' page-break' : '';
+
+  let body = '<section class="ics214-page' + pageClass + '">';
+  body += '<div class="header-block">';
+  body += '<div class="titlewrap"><div class="left">ICS 214</div><div class="center">UNIT LOG / ACTIVITY LOG</div><div class="right">Page ' + pageNo + ' of ' + totalPages + '</div></div>';
+  body += '<table class="head">';
+  body += '<tr><td width="55%"><div class="bn">1. Incident Name</div><div class="bv">' + esc(data.incidentName) + '</div></td><td width="45%"><div class="bn">2. Operational Period / Assignment</div><div class="bv">' + esc(data.assignmentName) + '</div></td></tr>';
+  body += '<tr><td><div class="bn">3. Name / ICS Position</div><div class="bv">' + esc(data.teamName) + '</div></td><td><div class="bn">4. Date Prepared</div><div class="bv">' + esc(new Date().toLocaleDateString()) + '</div></td></tr>';
+  body += '<tr><td><div class="bn">5. Facility / Location</div><div class="bv">' + esc(data.incidentLocation) + '</div></td><td><div class="bn">6. Operational Period</div><div class="bv">From: ' + fmtPeriod(data.opPeriodFrom) + '<br>To: ' + fmtPeriod(data.opPeriodTo) + '</div></td></tr>';
+  body += '</table>';
+  body += '</div>';
+
+  body += '<div class="logwrap">';
+  body += '<table class="log">';
+  body += '<thead><tr><th class="num">#</th><th class="date">Date</th><th class="time">Time</th><th class="callsign">CALLSIGN</th><th class="nws">NWS?</th><th class="activity">7. Notable Activities / Message Traffic</th></tr></thead>';
+  body += '<tbody>';
+
+  rows.forEach(function(r, idx){
+    body += buildIcs214RowHtml(r, seqStart + idx, false);
+  });
+  for(let i = 0; i < blankRows; i++){
+    body += buildIcs214RowHtml(null, seqStart + rows.length + i, true);
+  }
+
+  body += '</tbody></table>';
+  body += '</div>';
+
+  body += '<table class="foot">';
+  body += '<tr><td width="50%"><div class="bn">8. Prepared By</div><div class="bv">' + esc(data.preparedBy) + '</div></td><td width="50%"><div class="bn">9. Additional Info</div><div class="bv">Generated by Rev-Logger on ' + esc(generated) + '</div></td></tr>';
+  body += '</table>';
+
+  body += '</section>';
+  return body;
+}
+
+function measureIcs214Layout(data){
+  const host = document.createElement('div');
+  host.className = 'measure-host';
+  document.body.appendChild(host);
+
+  const style = document.createElement('style');
+  style.textContent = ics214Styles();
+  host.appendChild(style);
+
+  const pageHost = document.createElement('div');
+  pageHost.innerHTML = buildIcs214PageHtml(data, {
+    pageNo: 1,
+    totalPages: 1,
+    rows: [],
+    blankRows: 0,
+    seqStart: 1,
+    generated: new Date().toLocaleString(),
+    pageBreak: false
+  });
+  host.appendChild(pageHost);
+
+  const page = host.querySelector('.ics214-page');
+  const headerBlock = host.querySelector('.header-block');
+  const foot = host.querySelector('.foot');
+  const thead = host.querySelector('.log thead');
+  const tbody = host.querySelector('.log tbody');
+
+  page.style.height = '7.15in';
+  page.style.overflow = 'hidden';
+
+  const usableHeight = Math.floor(
+    page.getBoundingClientRect().height -
+    headerBlock.getBoundingClientRect().height -
+    foot.getBoundingClientRect().height -
+    thead.getBoundingClientRect().height - 2
+  );
+
+  function measureRow(row, seq, isBlank){
+    tbody.innerHTML = buildIcs214RowHtml(row, seq, isBlank);
+    const tr = tbody.querySelector('tr');
+    return Math.ceil(tr.getBoundingClientRect().height);
+  }
+
+  const rowHeights = (data.rows || []).map(function(row, idx){
+    return measureRow(row, idx + 1, false);
+  });
+  const blankRowHeight = measureRow(null, 1, true);
+
+  host.remove();
+
+  return {
+    usableHeight: Math.max(usableHeight, 120),
+    rowHeights: rowHeights,
+    blankRowHeight: Math.max(blankRowHeight, 18)
+  };
+}
+
+function paginateIcs214Rows(data){
+  const rows = Array.isArray(data.rows) ? data.rows.slice() : [];
+  const metrics = measureIcs214Layout(data);
+  const usableHeight = metrics.usableHeight;
+  const blankRowHeight = metrics.blankRowHeight;
+  const rowHeights = metrics.rowHeights;
+
+  if(!rows.length){
+    return [{ rows: [], blankRows: 0 }];
+  }
+
+  const pages = [];
+  let currentRows = [];
+  let used = 0;
+
+  function pushPage(){
+    pages.push({ rows: currentRows.slice(), blankRows: 0 });
+    currentRows = [];
+    used = 0;
+  }
+
+  rows.forEach(function(row, idx){
+    const h = rowHeights[idx] || blankRowHeight;
+    if(currentRows.length && (used + h) > usableHeight){
+      pushPage();
+    }
+    currentRows.push(row);
+    used += h;
+  });
+
+  if(currentRows.length || !pages.length){
+    pushPage();
+  }
+
+  return pages;
+}
+
+function generateICS214Html(data){
+  const pages = paginateIcs214Rows(data);
+  const totalPages = pages.length || 1;
+  const generated = new Date().toLocaleString();
+
+  let body = '';
+  let seqStart = 1;
+
+  pages.forEach(function(page, idx){
+    body += buildIcs214PageHtml(data, {
+      pageNo: idx + 1,
+      totalPages: totalPages,
+      rows: page.rows,
+      blankRows: page.blankRows,
+      seqStart: seqStart,
+      generated: generated,
+      pageBreak: idx < (totalPages - 1)
+    });
+    seqStart += page.rows.length;
+  });
+
+  return '<!doctype html><html><head><meta charset="utf-8"><title>ICS-214</title><style>' +
+    ics214Styles() +
+    '</style></head><body>' + body + '</body></html>';
+}
+
+function previewICS214(){
+  const w = window.open('', 'ICS214Preview');
+  if(!w){
+    showModal('Popup Blocked', '<p>Allow pop-ups for preview/print functions.</p>');
+    return;
+  }
+  w.document.write(generateICS214Html(getIcs214Data()));
+  w.document.close();
+}
+
+function printICS214(){
+  const w = window.open('', 'ICS214Print');
+  if(!w){
+    showModal('Popup Blocked', '<p>Allow pop-ups for preview/print functions.</p>');
+    return;
+  }
+  w.document.write(generateICS214Html(getIcs214Data()));
+  w.document.close();
+  setTimeout(function(){
+    w.print();
+  }, 400);
+}
+
+function downloadICS214Html(){
+  downloadBlob(new Blob([generateICS214Html(getIcs214Data())], { type:'text/html' }), safeFileBase() + '_ICS214.html');
+}
+
+
+
+function weatherTooltipHtml(p, event){
+  const expires = p.expires ? new Date(p.expires).toLocaleString() : '—';
+  return '<strong>' + esc(event || 'Alert') + '</strong>' +
+    'Severity: ' + esc(p.severity || '—') + '<br>' +
+    'Urgency: ' + esc(p.urgency || '—') + '<br>' +
+    'Expires: ' + esc(expires) + '<br>' +
+    'Areas: ' + esc(p.areaDesc || '—');
+}
+
+function moveWxTooltip(ev){
+  const tip = $('wxTooltip');
+  if(!tip || tip.style.display !== 'block') return;
+  const pad = 14;
+  const x = Math.min(window.innerWidth - tip.offsetWidth - pad, ev.clientX + 14);
+  const y = Math.min(window.innerHeight - tip.offsetHeight - pad, ev.clientY + 14);
+  tip.style.left = Math.max(pad, x) + 'px';
+  tip.style.top = Math.max(pad, y) + 'px';
+}
+
+function showWxTooltip(ev, html){
+  const tip = $('wxTooltip');
+  if(!tip) return;
+  tip.innerHTML = html;
+  tip.style.display = 'block';
+  tip.setAttribute('aria-hidden', 'false');
+  moveWxTooltip(ev);
+}
+
+function hideWxTooltip(){
+  const tip = $('wxTooltip');
+  if(!tip) return;
+  tip.style.display = 'none';
+  tip.setAttribute('aria-hidden', 'true');
+}
+
+function attachWxTooltip(el, html){
+  if(!el) return;
+  el.addEventListener('mouseenter', function(ev){ showWxTooltip(ev, html); });
+  el.addEventListener('mousemove', moveWxTooltip);
+  el.addEventListener('mouseleave', hideWxTooltip);
+  el.addEventListener('blur', hideWxTooltip);
+}
+
+function summarizeWeatherAlerts(features){
+  const summary = { warnings:0, watches:0, statements:0, total:0, items:[] };
+  const dedupe = new Set();
+  (features || []).forEach(function(feature){
+    const p = feature && feature.properties ? feature.properties : {};
+    const key = (p.event || '') + '|' + (p.headline || '') + '|' + (p.effective || '');
+    if(dedupe.has(key)) return;
+    dedupe.add(key);
+    const event = (p.event || 'Alert').trim();
+    if(/warning/i.test(event)) summary.warnings += 1;
+    else if(/watch/i.test(event)) summary.watches += 1;
+    else summary.statements += 1;
+    summary.items.push(event);
+  });
+  summary.total = summary.warnings + summary.watches + summary.statements;
+  return summary;
+}
+
+function compactWeatherLabel(event){
+  return String(event || 'Alert')
+    .replace(/\s+Warning$/i, ' Warn')
+    .replace(/\s+Watch$/i, ' Watch')
+    .replace(/\s+Advisory$/i, ' Adv')
+    .replace(/\s+Statement$/i, ' Stmt')
+    .replace(/\s+Emergency$/i, ' Emerg')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function updateWeatherMiniIndicator(features){
+  const wrap = $('weatherMiniWrap');
+  if(!wrap) return;
+  wrap.innerHTML = '';
+
+  const label = document.createElement('span');
+  label.className = 'wx-mini-label small';
+  label.textContent = 'WX:';
+  wrap.appendChild(label);
+
+  const dedupe = new Set();
+  const items = [];
+
+  (features || []).forEach(function(feature){
+    const p = feature.properties || {};
+    const key = (p.event || '') + '|' + (p.headline || '') + '|' + (p.effective || '');
+    if(dedupe.has(key)) return;
+    dedupe.add(key);
+
+    const event = p.event || 'Alert';
+    const type = /warning/i.test(event) ? 'warning' : /watch/i.test(event) ? 'watch' : 'statement';
+    items.push({ feature: feature, event: event, type: type });
+  });
+
+  if(!items.length){
+    const zero = document.createElement('button');
+    zero.type = 'button';
+    zero.className = 'pill wx-mini wx-mini-item quiet';
+    zero.textContent = '0';
+    zero.title = 'No active watches or warnings.';
+    attachWxTooltip(zero, '<strong>No active watches or warnings</strong>Use this to jump to the weather panel.');
+    zero.addEventListener('click', showWeatherAlertsSummary);
+    wrap.appendChild(zero);
+    return;
+  }
+
+  items.forEach(function(item){
+    const p = item.feature.properties || {};
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'pill wx-mini wx-mini-item ' + item.type;
+    btn.textContent = compactWeatherLabel(item.event);
+    btn.title = item.event;
+    attachWxTooltip(btn, weatherTooltipHtml(p, item.event));
+    btn.addEventListener('click', function(){
+      showModal(
+        item.event,
+        '<p><strong>Headline:</strong> ' + esc(p.headline || '—') + '</p>' +
+        '<p><strong>Severity:</strong> ' + esc(p.severity || '—') + ' &nbsp; <strong>Urgency:</strong> ' + esc(p.urgency || '—') + '</p>' +
+        '<p><strong>Areas:</strong> ' + esc(p.areaDesc || '—') + '</p>' +
+        '<p><strong>Description:</strong><br>' + esc(p.description || '—').replace(/\n+/g, '<br>') + '</p>' +
+        '<p><strong>Instruction:</strong><br>' + esc(p.instruction || '—').replace(/\n+/g, '<br>') + '</p>'
+      );
+    });
+    wrap.appendChild(btn);
+  });
+}
+
+function showWeatherAlertsSummary(){
+  if($('icsPanelBody').classList.contains('collapsed') || $('weatherPanelBody').classList.contains('collapsed')){
+    setInfoPanelsCollapsed(false);
+    persistState();
+  }
+  const panel = $('weatherPanelBody');
+  if(panel && panel.scrollIntoView){
+    panel.scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+}
+
+function renderWeatherAlerts(features){
+  const warnings = $('warningStrip');
+  const watches = $('watchStrip');
+  warnings.innerHTML = '';
+  watches.innerHTML = '';
+
+  const dedupe = new Set();
+
+  if(!features || !features.length){
+    warnings.innerHTML = '';
+    watches.innerHTML = '<span class="pill small">No active alerts.</span>';
+    updateWeatherMiniIndicator([]);
+    return;
+  }
+
+  features.forEach(function(feature){
+    const p = feature.properties || {};
+    const key = (p.event || '') + '|' + (p.headline || '') + '|' + (p.effective || '');
+    if(dedupe.has(key)) return;
+    dedupe.add(key);
+
+    const event = p.event || 'Alert';
+    const type = /warning/i.test(event) ? 'warning' : /watch/i.test(event) ? 'watch' : 'statement';
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'alert-chip ' + type;
+    btn.textContent = event;
+    attachWxTooltip(btn, weatherTooltipHtml(p, event));
+    btn.addEventListener('click', function(){
+      showModal(
+        event,
+        '<p><strong>Headline:</strong> ' + esc(p.headline || '—') + '</p>' +
+        '<p><strong>Severity:</strong> ' + esc(p.severity || '—') + ' &nbsp; <strong>Urgency:</strong> ' + esc(p.urgency || '—') + '</p>' +
+        '<p><strong>Areas:</strong> ' + esc(p.areaDesc || '—') + '</p>' +
+        '<p><strong>Description:</strong><br>' + esc(p.description || '—').replace(/\n/g, '<br>') + '</p>' +
+        '<p><strong>Instruction:</strong><br>' + esc(p.instruction || '—').replace(/\n/g, '<br>') + '</p>'
+      );
+    });
+
+    if(type === 'warning') warnings.appendChild(btn);
+    else watches.appendChild(btn);
+  });
+
+  updateWeatherMiniIndicator(features);
+}
+
+async function loadWeatherByLatLon(lat, lon, label){
+  try {
+    const pointsResp = await fetch('https://api.weather.gov/points/' + lat + ',' + lon, {
+      headers: { 'Accept':'application/geo+json' }
+    });
+    if(!pointsResp.ok) throw new Error('NWS points lookup failed');
+
+    const points = await pointsResp.json();
+    const zoneUrl = points.properties && points.properties.forecastZone ? points.properties.forecastZone : '';
+    const countyUrl = points.properties && points.properties.county ? points.properties.county : '';
+    const zoneId = zoneUrl.split('/').pop();
+    const countyId = countyUrl.split('/').pop();
+
+    const reqs = [];
+    if(zoneId){
+      reqs.push(fetch('https://api.weather.gov/alerts/active/zone/' + zoneId, {
+        headers: { 'Accept':'application/geo+json' }
+      }).then(r => r.json()));
+    }
+    if(countyId){
+      reqs.push(fetch('https://api.weather.gov/alerts/active/zone/' + countyId, {
+        headers: { 'Accept':'application/geo+json' }
+      }).then(r => r.json()));
+    }
+
+    const results = await Promise.all(reqs);
+    const alerts = [];
+    results.forEach(r => (r.features || []).forEach(f => alerts.push(f)));
+
+    currentWeatherContext = {
+      label: label,
+      lat: lat,
+      lon: lon,
+      zoneId: zoneId,
+      countyId: countyId,
+      alerts: alerts
+    };
+
+    $('weatherSummary').textContent = alerts.length
+      ? (label + ' • ' + alerts.length + ' active alert(s)')
+      : (label + ' • no active alerts');
+
+    renderWeatherAlerts(alerts);
+    persistState();
+  } catch(err){
+    showModal('Weather Error', '<p>' + esc(err.message) + '</p>');
+  }
+}
+
+async function loadWeatherByZip(){
+  const zip = $('zipInput').value.trim();
+  if(!/^\d{5}$/.test(zip)){
+    showModal('Weather', '<p>Enter a valid 5-digit ZIP code.</p>');
+    return;
+  }
+
+  try {
+    const r = await fetch('https://api.zippopotam.us/us/' + zip);
+    if(!r.ok) throw new Error('ZIP lookup failed');
+    const data = await r.json();
+    const place = data.places && data.places[0];
+
+    await loadWeatherByLatLon(
+      Number(place.latitude),
+      Number(place.longitude),
+      place['place name'] + ', ' + place['state abbreviation'] + ' ' + zip
+    );
+  } catch(err){
+    showModal('Weather Error', '<p>' + esc(err.message) + '</p>');
+  }
+}
+
+function loadWeatherByGeolocation(){
+  if(!navigator.geolocation){
+    showModal('Weather', '<p>Geolocation is not available in this browser.</p>');
+    return;
+  }
+
+  const isLikelySafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent || '');
+
+  function showGeoError(err){
+    let primary = 'Unable to get your location.';
+    const details = [];
+
+    if(err && typeof err.code !== 'undefined'){
+      if(err.code === 1){
+        primary = 'Location permission was denied.';
+        details.push('In Safari, allow location access for this site and try again.');
+      } else if(err.code === 2){
+        primary = 'Your location could not be determined.';
+      } else if(err.code === 3){
+        primary = 'Location lookup timed out.';
+        details.push('Try again or use the ZIP field instead.');
+      }
+    } else if(err && err.message){
+      primary = err.message;
+    }
+
+    if((location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') || location.protocol === 'file:'){
+      details.push('Safari often blocks geolocation unless the page is opened from HTTPS or localhost.');
+    }
+
+    if(isLikelySafari){
+      details.push('If Safari still blocks access, check Safari website permissions for Location and make sure precise location is allowed for this page.');
+    }
+
+    const html = '<p>' + esc(primary) + '</p>' + (details.length ? '<p>' + details.map(esc).join('<br>') + '</p>' : '');
+    showModal('Weather Error', html);
+  }
+
+  try {
+    navigator.geolocation.getCurrentPosition(
+      function(pos){
+        loadWeatherByLatLon(pos.coords.latitude, pos.coords.longitude, 'Current Location');
+      },
+      function(err){
+        showGeoError(err);
+      },
+      {
+        enableHighAccuracy:false,
+        timeout:15000,
+        maximumAge:300000
+      }
+    );
+  } catch(err){
+    showGeoError(err);
+  }
+}
+
+function setTestMode(enabled){
+  const checked = !!enabled;
+  $('testModeToggle').checked = checked;
+  updateTestModeVisibility();
+}
+
+function setInfoPanelsCollapsed(collapsed){
+  ['icsPanelBody','weatherPanelBody'].forEach(id => {
+    const el = $(id);
+    if(!el) return;
+    el.classList.toggle('collapsed', !!collapsed);
+  });
+}
+
+function toggleInfoPanels(){
+  const shouldCollapse = !$('icsPanelBody').classList.contains('collapsed');
+  setInfoPanelsCollapsed(shouldCollapse);
+  persistState();
+}
+
+function buildState(){
+  return {
+    incidentLocation: $('incidentLocation').value,
+    incidentName: $('incidentName').value,
+    assignmentName: $('assignmentName').value,
+    teamName: $('teamName').value,
+    opPeriodFrom: $('opPeriodFrom').value,
+    opPeriodTo: $('opPeriodTo').value,
+    preparedBy: $('preparedBy').value,
+    zipInput: $('zipInput').value,
+    transcriptText: $('sttOutput').innerText,
+    scriptItems: scriptItems,
+    keywordItems: keywordItems,
+    commonReportsItems: commonReportsItems,
+    weather: currentWeatherContext,
+    callsigns: Array.from($('callsignList').options).map(o => o.value),
+    nwsCallsigns: Array.from(nwsCallsignSet),
+    rows: gatherRows(),
+    icsCollapsed: $('icsPanelBody').classList.contains('collapsed'),
+    weatherCollapsed: $('weatherPanelBody').classList.contains('collapsed'),
+    stateText: $('runState').textContent,
+    theme: $('themeSelect').value,
+    testMode: $('testModeToggle').checked
+  };
+}
+
+function persistState(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(buildState()));
+}
+
+function restoreState(state){
+  if(!state) return;
+
+  ['incidentLocation','incidentName','assignmentName','teamName','opPeriodFrom','opPeriodTo','preparedBy','zipInput']
+    .forEach(id => {
+      if(state[id] != null) $(id).value = state[id];
+    });
+
+  scriptItems = Array.isArray(state.scriptItems) ? state.scriptItems : [];
+  keywordItems = Array.isArray(state.keywordItems) ? state.keywordItems : [];
+  commonReportsItems = Array.isArray(state.commonReportsItems) ? state.commonReportsItems : [];
+  renderScripts();
+  renderCommonReports();
+  renderTranscript(state.transcriptText || '');
+
+  $('callsignList').innerHTML = '';
+  (state.callsigns || []).forEach(addCallsign);
+
+  nwsCallsignSet.clear();
+  (state.nwsCallsigns || []).forEach(cs => nwsCallsignSet.add(cs));
+
+  const tbody = $('eventLog').querySelector('tbody');
+  tbody.innerHTML = '';
+  (state.rows || []).forEach(r => appendLogRow(r.date, r.time, r.callsign, r.nws, r.activity));
+  refreshEventLogHighlights();
+  syncMessageHighlight();
+
+  currentWeatherContext = state.weather || null;
+  if(currentWeatherContext && currentWeatherContext.alerts){
+    renderWeatherAlerts(currentWeatherContext.alerts);
+    $('weatherSummary').textContent = currentWeatherContext.alerts.length
+      ? ((currentWeatherContext.label || 'Saved Location') + ' • ' + currentWeatherContext.alerts.length + ' active alert(s)')
+      : ((currentWeatherContext.label || 'Saved Location') + ' • no active alerts');
+  } else {
+    updateWeatherMiniIndicator([]);
+  }
+
+  if(state.icsCollapsed || state.weatherCollapsed){
+    setInfoPanelsCollapsed(true);
+  } else {
+    setInfoPanelsCollapsed(false);
+  }
+
+  if(state.stateText === 'Running') setRunState('running');
+  else if(state.stateText === 'Paused') setRunState('paused');
+  else if(state.stateText === 'Ended') setRunState('ended');
+  else setRunState('idle');
+
+  if(state.theme){
+    $('themeSelect').value = state.theme;
+    applyTheme(state.theme);
+  }
+
+  setTestMode(!!state.testMode);
+}
+
+function handleTempImport(file){
+  file.text()
+    .then(t => {
+      restoreState(JSON.parse(t));
+      persistState();
+    })
+    .catch(err => showModal('Import Error', '<p>' + esc(err.message) + '</p>'));
+}
+
+function handleScriptImport(file){
+  file.text()
+    .then(t => {
+      const rows = parseCsv(t);
+      scriptItems = rows
+        .map(r => ({ label:(r[0] || '').trim(), text:(r[1] || r[0] || '').trim() }))
+        .filter(x => x.label || x.text);
+      renderScripts();
+      persistState();
+    })
+    .catch(err => showModal('Script Import Error', '<p>' + esc(err.message) + '</p>'));
+}
+
+function handleKeywordImport(file){
+  file.text()
+    .then(t => {
+      const rows = parseCsv(t);
+      keywordItems = rows
+        .map(r => ({ term:(r[0] || '').trim(), color:(r[1] || '#fff59d').trim() }))
+        .filter(x => x.term);
+      renderTranscript($('sttOutput').innerText);
+      syncMessageHighlight();
+      refreshEventLogHighlights();
+      persistState();
+    })
+    .catch(err => showModal('Keyword Import Error', '<p>' + esc(err.message) + '</p>'));
+}
+
+function handleCommonReportsImport(file){
+  file.text()
+    .then(t => {
+      const rows = parseCsv(t);
+      commonReportsItems = rows
+        .map(r => (r[0] || '').trim())
+        .filter(Boolean);
+      renderCommonReports();
+      persistState();
+    })
+    .catch(err => showModal('Common Reports Import Error', '<p>' + esc(err.message) + '</p>'));
+}
+
+function bind(){
+  $('btnImportTemp').addEventListener('click', () => $('fileTemp').click());
+  $('btnImportScript').addEventListener('click', () => $('fileScript').click());
+  $('btnImportKeywords').addEventListener('click', () => $('fileKeywords').click());
+  $('btnImportCommonReports').addEventListener('click', () => $('fileCommonReports').click());
+
+  $('btnExportTemp').addEventListener('click', exportTempLog);
+  $('btnExportCsv').addEventListener('click', exportCsvLog);
+  $('btnPreview214').addEventListener('click', previewICS214);
+  $('btnExport214').addEventListener('click', downloadICS214Html);
+  $('btnPrint214').addEventListener('click', printICS214);
+  $('btnClearLog').addEventListener('click', clearLog);
+
+  $('btnStart').addEventListener('click', function(){
+    if(!$('opPeriodFrom').value) $('opPeriodFrom').value = toLocalInputValue(new Date());
+    $('opPeriodTo').value = '';
+    setRunState('running');
+    addSystemEntry('Event started.');
+  });
+
+  $('btnPause').addEventListener('click', function(){
+    setRunState('paused');
+    addSystemEntry('Event paused.');
+  });
+
+  $('btnResume').addEventListener('click', function(){
+    if(!$('opPeriodFrom').value) $('opPeriodFrom').value = toLocalInputValue(new Date());
+    setRunState('running');
+    addSystemEntry('Event resumed.');
+  });
+
+  $('btnEnd').addEventListener('click', function(){
+    if(!$('opPeriodFrom').value) $('opPeriodFrom').value = toLocalInputValue(new Date());
+    $('opPeriodTo').value = toLocalInputValue(new Date());
+    setRunState('ended');
+    addSystemEntry('Event ended.');
+  });
+
+  $('btnWeatherZip').addEventListener('click', loadWeatherByZip);
+  $('btnWeatherGeo').addEventListener('click', loadWeatherByGeolocation);
+
+  $('btnSttStart').addEventListener('click', startSTT);
+  $('btnSttStop').addEventListener('click', stopSTT);
+  $('btnClientLog').addEventListener('click', showClientLogModal);
+  $('btnSampleTranscript').addEventListener('click', injectSampleTranscript);
+  $('testModeToggle').addEventListener('change', function(){
+    setTestMode(this.checked);
+    persistState();
+  });
+  $('btnCopyTranscript').addEventListener('click', copySelectedTranscript);
+  $('btnTranscriptToMessage').addEventListener('click', insertSelectedTranscriptIntoMessage);
+  $('btnClearTranscript').addEventListener('click', clearTranscript);
+
+  $('btnRememberNws').addEventListener('click', function(){
+    const cs = $('entryCallsign').value.trim().toUpperCase();
+    if(cs){
+      nwsCallsignSet.add(cs);
+      $('entryNwsTag').value = 'Yes';
+      persistState();
+      showToast(cs + ' remembered as NWS.');
+    } else {
+      showToast('Enter a callsign first.');
+    }
+  });
+
+  $('btnShowShortcuts').addEventListener('click', showKeyboardShortcuts);
+
+  $('btnLogEntry').addEventListener('click', function(){
+    addLogEntry();
+  });
+
+  $('btnClearEntry').addEventListener('click', function(){
+    clearEntryFields(true);
+    persistState();
+  });
+
+  $('callsignList').addEventListener('dblclick', insertSelectedCallsign);
+  $('entryCallsign').addEventListener('input', maybeApplyNwsTagFromCallsign);
+  $('entryCallsign').addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){
+      e.preventDefault();
+      $('messageInput').focus();
+    }
+  });
+
+  $('messageInput').addEventListener('input', function(){
+    syncMessageHighlight();
+    persistState();
+  });
+
+  $('commonReportsSelect').addEventListener('change', function(){
+    if(this.value) insertCommonReportIntoMessage(this.value);
+    this.value = '';
+  });
+  $('messageInput').addEventListener('scroll', syncMessageHighlight);
+
+  document.addEventListener('keydown', handleGlobalShortcuts);
+
+  $('btnCloseModal').addEventListener('click', closeModal);
+  $('modal').addEventListener('click', function(e){
+    if(e.target === $('modal')) closeModal();
+  });
+
+  $('btnImportMenu').addEventListener('click', function(e){
+    e.stopPropagation();
+    toggleDropdown('importMenu');
+  });
+  $('btnExportMenu').addEventListener('click', function(e){
+    e.stopPropagation();
+    toggleDropdown('exportMenu');
+  });
+  $('btnHelpMenu').addEventListener('click', function(e){
+    e.stopPropagation();
+    toggleDropdown('helpMenu');
+  });
+
+  $('btnImportTempMenu').addEventListener('click', function(){ closeAllDropdowns(); $('btnImportTemp').click(); });
+  $('btnImportScriptMenu').addEventListener('click', function(){ closeAllDropdowns(); $('btnImportScript').click(); });
+  $('btnImportKeywordsMenu').addEventListener('click', function(){ closeAllDropdowns(); $('btnImportKeywords').click(); });
+  $('btnImportCommonReportsMenu').addEventListener('click', function(){ closeAllDropdowns(); $('btnImportCommonReports').click(); });
+
+  $('btnPreview214Menu').addEventListener('click', function(){ closeAllDropdowns(); $('btnPreview214').click(); });
+  $('btnExport214Menu').addEventListener('click', function(){ closeAllDropdowns(); $('btnExport214').click(); });
+  $('btnPrint214Menu').addEventListener('click', function(){ closeAllDropdowns(); $('btnPrint214').click(); });
+  $('btnExportTempMenu').addEventListener('click', function(){ closeAllDropdowns(); $('btnExportTemp').click(); });
+  $('btnExportCsvMenu').addEventListener('click', function(){ closeAllDropdowns(); $('btnExportCsv').click(); });
+
+  $('btnCheatSheet').addEventListener('click', function(){ closeAllDropdowns(); showCheatSheetModal(); });
+  $('btnUserManual').addEventListener('click', function(){ closeAllDropdowns(); openUserManualTab(); });
+
+  document.addEventListener('click', function(e){
+    if(!e.target.closest('.menu-wrap')) closeAllDropdowns();
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape') closeAllDropdowns();
+  });
+
+  $('fileTemp').addEventListener('change', e => {
+    if(e.target.files[0]) handleTempImport(e.target.files[0]);
+    e.target.value = '';
+  });
+
+  $('fileScript').addEventListener('change', e => {
+    if(e.target.files[0]) handleScriptImport(e.target.files[0]);
+    e.target.value = '';
+  });
+
+  $('fileKeywords').addEventListener('change', e => {
+    if(e.target.files[0]) handleKeywordImport(e.target.files[0]);
+    e.target.value = '';
+  });
+
+  $('fileCommonReports').addEventListener('change', e => {
+    if(e.target.files[0]) handleCommonReportsImport(e.target.files[0]);
+    e.target.value = '';
+  });
+
+  document.querySelectorAll('input, textarea, select').forEach(el => {
+    el.addEventListener('change', persistState);
+  });
+
+  $('sttOutput').addEventListener('input', function(){
+    persistState();
+    extractCallsigns($('sttOutput').innerText).forEach(addCallsign);
+  });
+
+  document.querySelectorAll('[data-toggle]').forEach(btn => {
+    btn.addEventListener('click', function(){
+      toggleInfoPanels();
+    });
+  });
+
+  $('themeSelect').addEventListener('change', function(){
+    applyTheme(this.value);
+    persistState();
+  });
+}
+
+bind();
+$('themeSelect').value = 'light';
+applyTheme('light');
+setTestMode(false);
+$('btnSttStop').disabled = true;
+syncMessageHighlight();
+renderCommonReports();
+updateWeatherMiniIndicator([]);
+updateClock();
+setInterval(updateClock, 1000);
+
+const saved = localStorage.getItem(STORAGE_KEY);
+if(saved){
+  try {
+    restoreState(JSON.parse(saved));
+  } catch(e){}
+}
+
+if(gatherRows().length === 0){
+  addSystemEntry('Rev-Logger initialized.');
+}
+
+window.addEventListener('beforeunload', function(){
+  if(mediaStream) mediaStream.getTracks().forEach(function(t){ t.stop(); });
+});
+
+})();
+</script>
+</body>
+</html>
